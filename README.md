@@ -498,12 +498,131 @@ order by
 ```
 
 ### Data Visualization in Power BI
+We created views in SQL and exported them to Power BI in order to visualize the following;
 1.	What is the global death percentage?
-2.	What are the top 10 countries with the highest percentage of death?
-3.	Top 10 countries with the lowest COVID-19 death?
-4.	What are the top 10 Countries with the highest infection rate?
-5.	Show the global death percentage, the highest deaths, and the highest cases
+```sql
+drop 
+  view if exists tot_death_percentage;
+create view tot_death_percentage as 
+select
+  concat(
+  round(
+          max(total_deaths :: numeric) / max(total_cases :: numeric) *100, 
+    3
+  ), '%')  as Death_Percentage 
+from 
+  covid_data_deaths 
+order by 
+  Death_Percentage desc;
+```
+2.	Show the global death percentage, the highest deaths, and the highest cases
+```sql
+drop 
+  view if exists dth_per_high_dths_high_cases;
+create view dth_per_high_dths_high_cases as 
+select 
+  max(total_cases) sum_total_cases, 
+  max(total_deaths) sum_total_deaths, 
+  round(
+          max(total_deaths :: numeric) / max(total_cases :: numeric), 
+    3
+  ) * 100 as Death_Percentage 
+from 
+  covid_data_deaths 
+order by 
+  Death_Percentage desc;
+```
+
+3.	What are the top 10 countries with the highest percentage of death?
+```sql
+drop 
+  view if exists top_10_cntry_high_per_dth;
+create view top_10_cntry_high_per_dth as 
+select 
+  location, 
+  max(total_cases) sum_total_cases, 
+  max(total_deaths) sum_total_deaths, 
+  max(total_deaths :: numeric) / max(total_cases :: numeric) * 100 as Death_Percentage 
+from 
+  covid_data_deaths 
+where 
+  continent is not null 
+  and total_cases is not null 
+  and total_deaths is not null 
+group by 
+  location 
+order by 
+  Death_Percentage desc 
+limit 
+  10;
+```
+
+4.	Top 10 countries with the lowest COVID-19 death?
+```sql
+create view top_10_cntry_low_covid_death as 
+select 
+  location, 
+  max(total_deaths :: numeric) as sum_total_deaths 
+from 
+  covid_data_deaths 
+where 
+  total_deaths is not null 
+  and continent is not null 
+group by 
+  location 
+order by 
+  sum_total_deaths asc 
+limit 
+  10;
+```
+
+5.	What are the top 10 Countries with the highest infection rate?
+```sql
+create view top_10_cntry_high_infctn_rate as 
+select 
+  location, 
+  (population), 
+  max(total_cases) as sum_total_cases, 
+  round(
+    (
+      max(total_cases) * 100.0 / nullif(
+        max(population), 
+        0
+      )
+    ), 
+    2
+  ) as highest_infection_count 
+from 
+  covid_data_deaths 
+where 
+  total_cases is not null 
+group by 
+  location, 
+  population 
+order by 
+  highest_infection_count desc 
+limit 
+  10;
+```
 6.	Top 10 countries with the highest COVID-19 death?
+```sql
+create view top_10_cntry_high_covid_death as 
+select 
+  location, 
+  max(total_deaths :: numeric) as sum_total_deaths 
+from 
+  covid_data_deaths 
+where 
+  total_deaths is not null 
+  and continent is not null 
+group by 
+  location 
+order by 
+  sum_total_deaths desc 
+limit 
+  10;
+```
+
 
 ### Results
 The results show that:
